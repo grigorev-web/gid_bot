@@ -9,39 +9,57 @@ class CallbackHandler {
 
     async handleCallback(callbackQuery, bot) {
         try {
-            const { data, message, from } = callbackQuery;
-            const chatId = message.chat.id;
-            const messageId = message.message_id;
+            const data = callbackQuery.data;
+            const chatId = callbackQuery.message.chat.id;
+            const messageId = callbackQuery.message.message_id;
 
-            // Отвечаем на callback, чтобы убрать индикатор загрузки
-            await bot.answerCallbackQuery(callbackQuery.id);
+            logger.info(`Получен callback: ${data} от пользователя ${callbackQuery.from.id}`);
 
-            // Обновляем активность пользователя
-            await this.userModel.updateLastActivity(from.id);
-
-            // Обрабатываем различные типы callback
-            if (data.startsWith('stats_')) {
-                await this.handleStatsCallback(data, chatId, messageId, bot);
-            } else if (data.startsWith('settings_')) {
-                await this.handleSettingsCallback(data, chatId, messageId, bot);
-            } else if (data.startsWith('ai_')) {
-                await this.handleAiCallback(data, chatId, messageId, bot);
-            } else if (data === 'help') {
-                await this.handleHelpCallback(chatId, messageId, bot);
-            } else {
-                await this.handleUnknownCallback(chatId, messageId, bot);
+            switch (data) {
+                case 'menu':
+                    await this.handleMenu(callbackQuery, bot);
+                    break;
+                default:
+                    await bot.answerCallbackQuery(callbackQuery.id, {
+                        text: '❌ Неизвестная команда'
+                    });
             }
-
         } catch (error) {
             logger.error(`Ошибка обработки callback: ${error.message}`);
-            try {
-                await bot.answerCallbackQuery(callbackQuery.id, {
-                    text: 'Произошла ошибка при обработке запроса',
-                    show_alert: true
-                });
-            } catch (answerError) {
-                logger.error(`Ошибка ответа на callback: ${answerError.message}`);
-            }
+            await bot.answerCallbackQuery(callbackQuery.id, {
+                text: '❌ Произошла ошибка'
+            });
+        }
+    }
+
+    async handleMenu(callbackQuery, bot) {
+        try {
+            const chatId = callbackQuery.message.chat.id;
+            
+            const menuMessage = `
+📋 Главное меню
+
+🎯 Доступные разделы:
+• 💬 Чат с AI
+• 📊 Статистика
+• ⚙️ Настройки
+• 🤖 Статус AI
+• 📚 Справка
+
+Выберите нужный раздел или напишите сообщение для общения с AI.
+            `;
+
+            await bot.answerCallbackQuery(callbackQuery.id, {
+                text: '📋 Меню открыто'
+            });
+
+            await bot.sendMessage(chatId, menuMessage);
+            logger.info(`Пользователь ${callbackQuery.from.id} открыл меню`);
+        } catch (error) {
+            logger.error(`Ошибка обработки меню: ${error.message}`);
+            await bot.answerCallbackQuery(callbackQuery.id, {
+                text: '❌ Ошибка при открытии меню'
+            });
         }
     }
 
@@ -421,4 +439,4 @@ ${modelsList}
     }
 }
 
-module.exports = CallbackHandler; 
+module.exports = CallbackHandler;

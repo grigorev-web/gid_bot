@@ -44,6 +44,7 @@ module.exports = {
     COMMANDS: {
         START: '/start',
         HELP: '/help',
+        MENU: '/menu',
         AI_STATUS: '/ai_status',
         STATS: '/stats',
         SETTINGS: '/settings',
