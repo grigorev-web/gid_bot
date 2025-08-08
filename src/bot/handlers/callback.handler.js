@@ -15,50 +15,14 @@ class CallbackHandler {
 
             logger.info(`Получен callback: ${data} от пользователя ${callbackQuery.from.id}`);
 
-            switch (data) {
-                case 'menu':
-                    await this.handleMenu(callbackQuery, bot);
-                    break;
-                default:
-                    await bot.answerCallbackQuery(callbackQuery.id, {
-                        text: '❌ Неизвестная команда'
-                    });
-            }
+            // Обработка других callback'ов (если есть)
+            await bot.answerCallbackQuery(callbackQuery.id, {
+                text: '❌ Неизвестная команда'
+            });
         } catch (error) {
             logger.error(`Ошибка обработки callback: ${error.message}`);
             await bot.answerCallbackQuery(callbackQuery.id, {
                 text: '❌ Произошла ошибка'
-            });
-        }
-    }
-
-    async handleMenu(callbackQuery, bot) {
-        try {
-            const chatId = callbackQuery.message.chat.id;
-            
-            const menuMessage = `
-📋 Главное меню
-
-🎯 Доступные разделы:
-• 💬 Чат с AI
-• 📊 Статистика
-• ⚙️ Настройки
-• 🤖 Статус AI
-• 📚 Справка
-
-Выберите нужный раздел или напишите сообщение для общения с AI.
-            `;
-
-            await bot.answerCallbackQuery(callbackQuery.id, {
-                text: '📋 Меню открыто'
-            });
-
-            await bot.sendMessage(chatId, menuMessage);
-            logger.info(`Пользователь ${callbackQuery.from.id} открыл меню`);
-        } catch (error) {
-            logger.error(`Ошибка обработки меню: ${error.message}`);
-            await bot.answerCallbackQuery(callbackQuery.id, {
-                text: '❌ Ошибка при открытии меню'
             });
         }
     }

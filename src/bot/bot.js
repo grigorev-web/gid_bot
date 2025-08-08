@@ -114,6 +114,12 @@ class Bot {
             return;
         }
         
+        // Обработка нажатия на кнопку "📋 Меню"
+        if (text === '📋 Меню') {
+            await this.messageHandler.handleMenuButton(msg, this.bot);
+            return;
+        }
+        
         if (text.startsWith('/echo ')) {
             await this.messageHandler.handleEcho(msg, this.bot);
             return;
