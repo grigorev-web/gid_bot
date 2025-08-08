@@ -14,7 +14,7 @@ bash setup.sh
 cd /opt/telegram-bot
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
 
-# Установите зависимости
+# Установите зависимости (включая PM2)
 npm install
 
 # Настройте конфигурацию
@@ -25,9 +25,9 @@ nano config.js  # Введите ваши токены
 npm run migrate
 
 # Запустите через PM2
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
+npx pm2 start ecosystem.config.js
+npx pm2 save
+npx pm2 startup
 ```
 
 ## 🔄 Обновление бота
@@ -44,16 +44,16 @@ cd /opt/telegram-bot
 git pull origin main
 npm install
 npm run migrate
-pm2 restart telegram-bot
+npx pm2 restart telegram-bot
 ```
 
 ## 📊 Управление
 
 ```bash
-pm2 status          # Статус
-pm2 logs telegram-bot # Логи
-pm2 restart telegram-bot # Перезапуск
-pm2 stop telegram-bot   # Остановка
+npx pm2 status          # Статус
+npx pm2 logs telegram-bot # Логи
+npx pm2 restart telegram-bot # Перезапуск
+npx pm2 stop telegram-bot   # Остановка
 ```
 
 ## 🎯 Готово!
