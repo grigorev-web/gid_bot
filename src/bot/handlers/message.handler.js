@@ -44,11 +44,11 @@ class MessageHandler {
 Просто напишите мне сообщение, и я отвечу вам!
             `;
 
-            // Создаем клавиатуру с кнопкой Меню (без callback_data)
+            // Создаем клавиатуру с синей кнопкой Меню
             const keyboard = {
                 reply_markup: {
                     keyboard: [
-                        [{ text: '📋 Меню' }]
+                        [{ text: 'Меню' }]
                     ],
                     resize_keyboard: true,
                     one_time_keyboard: false
@@ -187,35 +187,6 @@ AI статистика:
         }
     }
 
-    async handleMenu(msg, bot) {
-        try {
-            const chat = msg.chat;
-            
-            // Создаем клавиатуру с кнопкой Меню (без callback_data)
-            const keyboard = {
-                reply_markup: {
-                    keyboard: [
-                        [{ text: '📋 Меню' }]
-                    ],
-                    resize_keyboard: true,
-                    one_time_keyboard: false
-                }
-            };
-
-            const menuMessage = `
-🎯 Главное меню
-
-Выберите действие:
-            `;
-
-            await bot.sendMessage(chat.id, menuMessage, keyboard);
-            logger.info(`Пользователь ${msg.from.id} открыл меню`);
-        } catch (error) {
-            logger.error(`Ошибка обработки команды /menu: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
-        }
-    }
-
     async handleMenuButton(msg, bot) {
         try {
             const chat = msg.chat;
@@ -234,9 +205,38 @@ AI статистика:
             `;
 
             await bot.sendMessage(chat.id, menuMessage);
-            logger.info(`Пользователь ${msg.from.id} нажал кнопку меню`);
+            logger.info(`Пользователь ${msg.from.id} нажал кнопку Меню`);
         } catch (error) {
-            logger.error(`Ошибка обработки кнопки меню: ${error.message}`);
+            logger.error(`Ошибка обработки кнопки Меню: ${error.message}`);
+            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
+        }
+    }
+
+    async handleMenu(msg, bot) {
+        try {
+            const chat = msg.chat;
+            
+            // Создаем клавиатуру с синей кнопкой Меню
+            const keyboard = {
+                reply_markup: {
+                    keyboard: [
+                        [{ text: 'Меню' }]
+                    ],
+                    resize_keyboard: true,
+                    one_time_keyboard: false
+                }
+            };
+
+            const menuMessage = `
+🎯 Главное меню
+
+Выберите действие:
+            `;
+
+            await bot.sendMessage(chat.id, menuMessage, keyboard);
+            logger.info(`Пользователь ${msg.from.id} открыл меню`);
+        } catch (error) {
+            logger.error(`Ошибка обработки команды /menu: ${error.message}`);
             await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
         }
     }
