@@ -109,6 +109,11 @@ class Bot {
             return;
         }
         
+        if (text === '/menu') {
+            await this.messageHandler.handleMenu(msg, this.bot);
+            return;
+        }
+        
         if (text.startsWith('/echo ')) {
             await this.messageHandler.handleEcho(msg, this.bot);
             return;

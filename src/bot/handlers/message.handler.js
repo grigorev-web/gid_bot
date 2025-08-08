@@ -187,6 +187,35 @@ AI статистика:
         }
     }
 
+    async handleMenu(msg, bot) {
+        try {
+            const chat = msg.chat;
+            
+            // Создаем клавиатуру с кнопкой Меню
+            const keyboard = {
+                reply_markup: {
+                    keyboard: [
+                        [{ text: '📋 Меню', callback_data: 'menu' }]
+                    ],
+                    resize_keyboard: true,
+                    one_time_keyboard: false
+                }
+            };
+
+            const menuMessage = `
+🎯 Главное меню
+
+Выберите действие:
+            `;
+
+            await bot.sendMessage(chat.id, menuMessage, keyboard);
+            logger.info(`Пользователь ${msg.from.id} открыл меню`);
+        } catch (error) {
+            logger.error(`Ошибка обработки команды /menu: ${error.message}`);
+            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
+        }
+    }
+
     async handleRegularMessage(msg, bot) {
         try {
             const user = msg.from;
@@ -276,82 +305,6 @@ AI статистика:
         } catch (error) {
             logger.error(`Ошибка обработки команды /echo: ${error.message}`);
             await bot.sendMessage(msg.chat.id, '❌ Ошибка при выполнении команды echo');
-        }
-    }
-
-    async handleMenu(msg, bot) {
-        try {
-            const chat = msg.chat;
-            
-            // Создаем клавиатуру с кнопкой Меню
-            const keyboard = {
-                reply_markup: {
-                    keyboard: [
-                        [{ text: '📋 Меню', callback_data: 'menu' }]
-                    ],
-                    resize_keyboard: true,
-                    one_time_keyboard: false
-                }
-            };
-
-            const menuMessage = `
-🎯 Главное меню
-
-Выберите действие:
-            `;
-
-            await bot.sendMessage(chat.id, menuMessage, keyboard);
-            logger.info(`Пользователь ${msg.from.id} открыл меню`);
-        } catch (error) {
-            logger.error(`Ошибка обработки команды /menu: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
-        }
-    }
-
-    async handleMessage(msg) {
-        const text = msg.text;
-        
-        if (!text) return;
-        
-        // Обработка команд
-        if (text === '/start') {
-            await this.handleStart(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/help') {
-            await this.handleHelp(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/menu') {
-            await this.handleMenu(msg, this.bot);
-            return;
-        }
-        
-        if (text.startsWith('/echo ')) {
-            await this.handleEcho(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/ai_status') {
-            await this.handleAiStatus(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/stats') {
-            await this.handleStats(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/settings') {
-            await this.handleSettings(msg, this.bot);
-            return;
-        }
-        
-        // Обработка обычных сообщений
-        if (!text.startsWith('/')) {
-            await this.handleRegularMessage(msg, this.bot);
         }
     }
 
