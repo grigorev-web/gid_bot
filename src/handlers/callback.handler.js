@@ -18,30 +18,6 @@ class CallbackHandler {
                 responseText = `🚀 Привет, ${userName}! Бот уже запущен и готов к работе!\n\nОтправьте мне любое сообщение, и я отвечу с помощью ИИ! 🤖`;
                 break;
                 
-            case 'echo_info':
-                responseText = `🔊 Команда Echo:\n\nИспользование: /echo <текст>\n\nПримеры:\n/echo Привет мир\n/echo Как дела?\n\nЭта команда повторяет ваш текст.`;
-                break;
-                
-            case 'ai_status':
-                try {
-                    const status = await this.gigaChatService.checkStatus();
-                    const tokenInfo = this.gigaChatService.getTokenInfo();
-                    
-                    responseText = `🤖 Статус GigaChat:\n\n`;
-                    
-                    if (status.status === 'connected') {
-                        responseText += `✅ Подключение активно\n`;
-                        responseText += `📊 Доступные модели: ${status.modelsCount}\n`;
-                    } else {
-                        responseText += `❌ Ошибка подключения: ${status.error}\n`;
-                    }
-                    
-                    responseText += `🔑 Токен: ${tokenInfo.isValid ? 'активен' : 'недействителен'}`;
-                } catch (error) {
-                    responseText = `❌ Ошибка подключения к GigaChat:\n\n${error.message}\n\nПроверьте настройки в файле config.js`;
-                }
-                break;
-                
             case 'about_bot':
                 responseText = `ℹ️ О боте:\n\n🤖 Название: Telegram Bot с GigaChat\n📅 Версия: 1.0.0\n🔧 Язык: JavaScript\n🤖 ИИ: GigaChat API\n📊 Режим: Поллинг\n\nУмный бот с интеграцией российского ИИ GigaChat для обработки сообщений.`;
                 break;

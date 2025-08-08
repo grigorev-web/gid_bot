@@ -109,32 +109,6 @@ class Bot {
             return;
         }
         
-        if (text === '/menu') {
-            await this.messageHandler.handleMenu(msg, this.bot);
-            return;
-        }
-        
-        // Обработка нажатия на кнопку "Меню"
-        if (text === 'Меню') {
-            await this.messageHandler.handleMenuButton(msg, this.bot);
-            return;
-        }
-        
-        if (text.startsWith('/echo ')) {
-            await this.messageHandler.handleEcho(msg, this.bot);
-            return;
-        }
-        
-        if (text === '/ai_status') {
-            await this.messageHandler.handleAiStatus(msg, this.bot);
-            return;
-        }
-
-        if (text === '/stats') {
-            await this.messageHandler.handleStats(msg, this.bot);
-            return;
-        }
-
         if (text === '/settings') {
             await this.messageHandler.handleSettings(msg, this.bot);
             return;

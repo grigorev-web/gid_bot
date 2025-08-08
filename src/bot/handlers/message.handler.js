@@ -36,26 +36,18 @@ class MessageHandler {
 
 Доступные команды:
 • /help - Справка
-• /menu - Главное меню
-• /ai_status - Статус AI
-• /stats - Ваша статистика
 • /settings - Настройки
 
 Просто напишите мне сообщение, и я отвечу вам!
             `;
 
-            // Создаем клавиатуру с синей кнопкой Меню
-            const keyboard = {
+            // Отправляем сообщение с очищенной клавиатурой
+            await bot.sendMessage(chat.id, welcomeMessage, {
                 reply_markup: {
-                    keyboard: [
-                        [{ text: 'Меню' }]
-                    ],
-                    resize_keyboard: true,
-                    one_time_keyboard: false
+                    remove_keyboard: true
                 }
-            };
-
-            await bot.sendMessage(chat.id, welcomeMessage, keyboard);
+            });
+            
             logger.info(`Пользователь ${user.id} запустил бота`);
         } catch (error) {
             logger.error(`Ошибка обработки команды /start: ${error.message}`);
@@ -71,8 +63,6 @@ class MessageHandler {
 Основные команды:
 • /start - Запуск бота
 • /help - Эта справка
-• /ai_status - Проверка статуса AI
-• /stats - Ваша статистика использования
 • /settings - Настройки бота
 
 Как использовать:
@@ -92,73 +82,6 @@ class MessageHandler {
         } catch (error) {
             logger.error(`Ошибка обработки команды /help: ${error.message}`);
             await bot.sendMessage(msg.chat.id, 'Произошла ошибка при отображении справки.');
-        }
-    }
-
-    async handleAiStatus(msg, bot) {
-        try {
-            const statusMessage = '🔍 Проверяю статус GigaChat...';
-            const statusMsg = await bot.sendMessage(msg.chat.id, statusMessage);
-
-            const status = await this.gigaChatService.checkStatus();
-            
-            let responseText = '';
-            if (status.available) {
-                responseText = `
-✅ GigaChat доступен
-
-Статус: Работает
-Модели: ${status.models.length} доступно
-Последняя проверка: ${new Date().toLocaleString('ru-RU')}
-                `;
-            } else {
-                responseText = `
-❌ GigaChat недоступен
-
-Ошибка: ${status.error}
-Статус: Не работает
-Последняя проверка: ${new Date().toLocaleString('ru-RU')}
-                `;
-            }
-
-            await bot.editMessageText(responseText, {
-                chat_id: msg.chat.id,
-                message_id: statusMsg.message_id
-            });
-        } catch (error) {
-            logger.error(`Ошибка проверки статуса AI: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при проверке статуса AI');
-        }
-    }
-
-    async handleStats(msg, bot) {
-        try {
-            const user = msg.from;
-            const userStats = await this.messageModel.getMessageStats(user.id);
-            const userInfo = await this.userModel.findByTelegramId(user.id);
-
-            let statsText = `
-📊 Ваша статистика
-
-Общие данные:
-• Всего сообщений: ${userStats.total_messages || 0}
-• AI ответов: ${userStats.ai_responses || 0}
-• Текстовых сообщений: ${userStats.text_messages || 0}
-• Медиа файлов: ${(userStats.photo_messages || 0) + (userStats.video_messages || 0)}
-
-AI статистика:
-• Использовано токенов: ${userStats.total_tokens || 0}
-• Среднее время ответа: ${Math.round(userStats.avg_response_time || 0)}ms
-
-Активность:
-• Последняя активность: ${userInfo?.last_activity ? new Date(userInfo.last_activity).toLocaleString('ru-RU') : 'Неизвестно'}
-• Дата регистрации: ${userInfo?.created_at ? new Date(userInfo.created_at).toLocaleString('ru-RU') : 'Неизвестно'}
-            `;
-
-            await bot.sendMessage(msg.chat.id, statsText);
-        } catch (error) {
-            logger.error(`Ошибка получения статистики: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при получении статистики');
         }
     }
 
@@ -184,60 +107,6 @@ AI статистика:
         } catch (error) {
             logger.error(`Ошибка получения настроек: ${error.message}`);
             await bot.sendMessage(msg.chat.id, '❌ Ошибка при получении настроек');
-        }
-    }
-
-    async handleMenuButton(msg, bot) {
-        try {
-            const chat = msg.chat;
-            
-            const menuMessage = `
-📋 Главное меню
-
-🎯 Доступные разделы:
-• 💬 Чат с AI
-• 📊 Статистика
-• ⚙️ Настройки
-• 🤖 Статус AI
-• 📚 Справка
-
-Выберите нужный раздел или напишите сообщение для общения с AI.
-            `;
-
-            await bot.sendMessage(chat.id, menuMessage);
-            logger.info(`Пользователь ${msg.from.id} нажал кнопку Меню`);
-        } catch (error) {
-            logger.error(`Ошибка обработки кнопки Меню: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
-        }
-    }
-
-    async handleMenu(msg, bot) {
-        try {
-            const chat = msg.chat;
-            
-            // Создаем клавиатуру с синей кнопкой Меню
-            const keyboard = {
-                reply_markup: {
-                    keyboard: [
-                        [{ text: 'Меню' }]
-                    ],
-                    resize_keyboard: true,
-                    one_time_keyboard: false
-                }
-            };
-
-            const menuMessage = `
-🎯 Главное меню
-
-Выберите действие:
-            `;
-
-            await bot.sendMessage(chat.id, menuMessage, keyboard);
-            logger.info(`Пользователь ${msg.from.id} открыл меню`);
-        } catch (error) {
-            logger.error(`Ошибка обработки команды /menu: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при отображении меню.');
         }
     }
 
@@ -316,20 +185,6 @@ AI статистика:
         } catch (error) {
             logger.error(`Ошибка обработки обычного сообщения: ${error.message}`);
             await bot.sendMessage(msg.chat.id, '❌ Произошла ошибка при обработке сообщения');
-        }
-    }
-
-    async handleEcho(msg, bot) {
-        try {
-            const echoText = msg.text.substring(6); // Убираем '/echo '
-            if (echoText.trim()) {
-                await bot.sendMessage(msg.chat.id, `🔊 Echo: ${echoText}`);
-            } else {
-                await bot.sendMessage(msg.chat.id, 'Использование: /echo <текст>');
-            }
-        } catch (error) {
-            logger.error(`Ошибка обработки команды /echo: ${error.message}`);
-            await bot.sendMessage(msg.chat.id, '❌ Ошибка при выполнении команды echo');
         }
     }
 

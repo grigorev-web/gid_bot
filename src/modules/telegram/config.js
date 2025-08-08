@@ -9,8 +9,7 @@ module.exports = {
     COMMANDS: {
         START: '/start',
         HELP: '/help',
-        ECHO: '/echo',
-        AI_STATUS: '/ai_status'
+        SETTINGS: '/settings'
     },
     
     // Настройки бота

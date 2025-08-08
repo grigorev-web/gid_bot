@@ -76,13 +76,8 @@ class TelegramBotModule {
             return;
         }
         
-        if (text.startsWith(telegramConfig.COMMANDS.ECHO + ' ')) {
-            await this.messageHandler.handleEcho(msg, this.bot);
-            return;
-        }
-        
-        if (text === telegramConfig.COMMANDS.AI_STATUS) {
-            await this.messageHandler.handleAiStatus(msg, this.bot);
+        if (text === telegramConfig.COMMANDS.SETTINGS) {
+            await this.messageHandler.handleSettings(msg, this.bot);
             return;
         }
         
