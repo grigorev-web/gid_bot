@@ -48,7 +48,7 @@ class MessageHandler {
                 }
             });
             
-            logger.info(`Пользователь ${user.id} запустил бота`);
+            logger.info(`${user.first_name} ${user.username} ${user.id} запустил бота`);
         } catch (error) {
             logger.error(`Ошибка обработки команды /start: ${error.message}`);
             await bot.sendMessage(msg.chat.id, 'Произошла ошибка при запуске бота. Попробуйте позже.');
