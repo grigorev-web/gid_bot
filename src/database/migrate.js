@@ -1,4 +1,5 @@
 const InitialMigration = require('./migrations/001_initial_schema');
+const CityGuideMigration = require('./migrations/002_city_guide_schema');
 const logger = require('../shared/logger/logger');
 
 async function runMigrations() {
@@ -8,6 +9,10 @@ async function runMigrations() {
         // Выполнение начальной миграции
         const initialMigration = new InitialMigration();
         await initialMigration.up();
+        
+        // Выполнение миграции городского гида
+        const cityGuideMigration = new CityGuideMigration();
+        await cityGuideMigration.up();
         
         console.log('✅ Все миграции выполнены успешно!');
         
@@ -21,6 +26,10 @@ async function runMigrations() {
 async function rollbackMigrations() {
     try {
         console.log('🔄 Откат миграций базы данных...');
+        
+        // Откат миграции городского гида
+        const cityGuideMigration = new CityGuideMigration();
+        await cityGuideMigration.down();
         
         // Откат начальной миграции
         const initialMigration = new InitialMigration();
