@@ -60,7 +60,7 @@ class Logger {
                 
                 // Логи ошибок по месяцам
                 new DailyRotateFile({
-                    filename: path.join(this.logDir, 'error-%Y-%m.log'),
+                    filename: path.join(this.logDir, 'errors-%Y-%m.log'),
                     datePattern: 'YYYY-MM',
                     frequency: 'month',
                     maxSize: '20m',

@@ -20,7 +20,7 @@ module.exports = {
         filename: 'bot-%Y-%m.log',
         
         // Формат для ошибок
-        errorFilename: 'error-%Y-%m.log',
+        errorFilename: 'errors-%Y-%m.log',
         
         // Формат для отладочных логов
         debugFilename: 'debug-%Y-%m.log'
