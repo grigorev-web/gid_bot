@@ -1,6 +1,6 @@
-# 📚 Документация по базе данных городского гида
+# 📚 Полная документация по базе данных городского гида
 
-## 🎯 Обзор
+## 🎯 Обзор системы
 
 База данных городского гида интегрирована в существующую систему Telegram бота и предоставляет полную функциональность для управления:
 - **Заведениями** (рестораны, бары, клубы, кинотеатры, театры)
@@ -17,6 +17,7 @@
 - **Гибкость**: Поддержка множественных категорий и связей
 - **Производительность**: Оптимизированные индексы и представления
 - **Масштабируемость**: Легкое добавление новых типов сущностей
+- **Целостность**: Проверки на уровне базы данных
 
 ## 📊 Структура таблиц
 
@@ -25,20 +26,24 @@
 ```sql
 CREATE TABLE addresses (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    street VARCHAR(255) NOT NULL,
-    house_number VARCHAR(20) NOT NULL,
+    street VARCHAR(255),
+    house_number VARCHAR(20),
     apartment VARCHAR(20),
-    city VARCHAR(100) NOT NULL DEFAULT 'Москва',
-    postal_code VARCHAR(10),
+    city VARCHAR(100) NOT NULL,
+    region VARCHAR(100),
+    postal_code VARCHAR(20),
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    is_public_space BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 **Назначение**: Хранение адресов для всех сущностей системы
-**Особенности**: Поддержка геолокации (координаты), множественные заведения на одном адресе
+**Особенности**: 
+- Поддержка геолокации (координаты)
+- Множественные заведения на одном адресе
+- Поддержка публичных пространств (площади, парки)
 
 ### 2. Таблица `categories` - Категории
 
@@ -48,11 +53,9 @@ CREATE TABLE categories (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     parent_id INT NULL,
-    level INT NOT NULL DEFAULT 1,
-    entity_type ENUM('establishment', 'event', 'promotion', 'attraction') NOT NULL,
+    level INT DEFAULT 1,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 ```
@@ -60,8 +63,8 @@ CREATE TABLE categories (
 **Назначение**: Иерархическая система категорий для всех типов сущностей
 **Особенности**: 
 - Поддержка вложенности через `parent_id` и `level`
-- Разделение по типам сущностей
 - Каскадное удаление дочерних категорий
+- Гибкая система уровней
 
 **Примеры категорий**:
 ```
@@ -69,6 +72,10 @@ CREATE TABLE categories (
 ├── Китайская кухня (level 2)
 ├── Итальянская кухня (level 2)
 └── Лучшие рестораны (level 2)
+
+Бар (level 1)
+├── Коктейль-бар (level 2)
+└── Пивной бар (level 2)
 ```
 
 ### 3. Таблица `establishments` - Заведения
@@ -78,24 +85,22 @@ CREATE TABLE establishments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    address_id INT NOT NULL,
-    phone VARCHAR(20),
+    address_id INT,
+    phone VARCHAR(50),
     website VARCHAR(255),
     email VARCHAR(255),
-    rating DECIMAL(3,2) CHECK (rating >= 0 AND rating <= 5),
-    price_range ENUM('budget', 'moderate', 'expensive', 'luxury') DEFAULT 'moderate',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL
 );
 ```
 
 **Назначение**: Основная информация о заведениях
 **Особенности**: 
-- Рейтинговая система (0-5)
-- Категории цен (бюджет, умеренно, дорого, люкс)
-- Связь с адресом (каскадное удаление)
+- Контактная информация и веб-сайт
+- Связь с адресом (SET NULL при удалении адреса)
+- Автоматическое обновление временных меток
 
 ### 4. Таблица `working_hours` - Рабочие часы
 
@@ -130,19 +135,18 @@ CREATE TABLE events (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    event_type ENUM('concert', 'party', 'city_holiday', 'exhibition', 'theater', 'cinema', 'other') NOT NULL,
+    event_type ENUM('concert', 'party', 'theater', 'cinema', 'festival', 'meeting', 'other') NOT NULL,
+    establishment_id INT NULL,
+    address_id INT NULL,
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
-    address_id INT NULL,
-    establishment_id INT NULL,
-    price DECIMAL(10,2),
-    max_participants INT,
+    price DECIMAL(10, 2) NULL,
+    max_participants INT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL,
     FOREIGN KEY (establishment_id) REFERENCES establishments(id) ON DELETE SET NULL,
-    CHECK (establishment_id IS NOT NULL OR address_id IS NOT NULL)
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL
 );
 ```
 
@@ -151,7 +155,7 @@ CREATE TABLE events (
 - Может быть привязано к заведению ИЛИ адресу
 - Различные типы событий
 - Ценовая политика и ограничения участников
-- Проверка на обязательность одной из связей
+- Гибкая система привязки к локациям
 
 ### 6. Таблица `promotions` - Акции и скидки
 
@@ -165,17 +169,16 @@ CREATE TABLE promotions (
     discount_amount DECIMAL(10,2),
     start_date DATE,
     end_date DATE,
-    valid_days JSON, -- [1,2,3,4,5,6,7] - дни недели
-    valid_hours JSON, -- {"start": "18:00", "end": "23:00"}
-    address_id INT NULL,
+    valid_days JSON,
+    valid_hours JSON,
     establishment_id INT NULL,
+    address_id INT NULL,
     is_permanent BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL,
     FOREIGN KEY (establishment_id) REFERENCES establishments(id) ON DELETE SET NULL,
-    CHECK (establishment_id IS NOT NULL OR address_id IS NOT NULL)
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL
 );
 ```
 
@@ -185,6 +188,7 @@ CREATE TABLE promotions (
 - Временные ограничения (даты, дни недели, часы)
 - Постоянные и временные акции
 - Привязка к заведению или адресу
+- JSON поля для гибких временных ограничений
 
 ### 7. Таблица `attractions` - Достопримечательности
 
@@ -213,9 +217,43 @@ CREATE TABLE attractions (
 - Рейтинговая система
 - Описание режима работы
 
+### 8. Таблица `images` - Изображения
+
+```sql
+CREATE TABLE images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('establishment', 'event', 'promotion', 'attraction') NOT NULL,
+    entity_id INT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(255),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Назначение**: Хранение изображений для всех сущностей
+**Особенности**: Поддержка множественных изображений, основное изображение
+
+### 9. Таблица `reviews` - Отзывы
+
+```sql
+CREATE TABLE reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('establishment', 'event', 'promotion', 'attraction') NOT NULL,
+    entity_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Назначение**: Система отзывов пользователей
+**Особенности**: Рейтинги и комментарии для всех типов сущностей
+
 ## 🔗 Связующие таблицы
 
-### 8-11. Таблицы связей с категориями
+### Таблицы связей с категориями
 
 ```sql
 -- establishment_categories, event_categories, 
@@ -224,6 +262,7 @@ CREATE TABLE [entity]_categories (
     id INT PRIMARY KEY AUTO_INCREMENT,
     [entity]_id INT NOT NULL,
     category_id INT NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ([entity]_id) REFERENCES [entities](id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
@@ -232,7 +271,10 @@ CREATE TABLE [entity]_categories (
 ```
 
 **Назначение**: Связи многие-ко-многим между сущностями и категориями
-**Особенности**: Уникальность связей, каскадное удаление
+**Особенности**: 
+- Уникальность связей
+- Каскадное удаление
+- Основная категория для каждой сущности
 
 ## 👁️ Представления (Views)
 
@@ -291,24 +333,27 @@ WHERE p.is_active = TRUE;
 CREATE INDEX idx_addresses_coordinates ON addresses(latitude, longitude);
 CREATE INDEX idx_addresses_city ON addresses(city);
 
--- Категории
-CREATE INDEX idx_categories_parent_id ON categories(parent_id);
-CREATE INDEX idx_categories_entity_type ON categories(entity_type);
-CREATE INDEX idx_categories_level ON categories(level);
-
 -- Заведения
-CREATE INDEX idx_establishments_address_id ON establishments(address_id);
-CREATE INDEX idx_establishments_rating ON establishments(rating);
-CREATE INDEX idx_establishments_is_active ON establishments(is_active);
-
--- События
-CREATE INDEX idx_events_start_date ON events(start_date);
-CREATE INDEX idx_events_end_date ON events(end_date);
-CREATE INDEX idx_events_establishment_id ON events(establishment_id);
+CREATE INDEX idx_establishments_address ON establishments(address_id);
+CREATE INDEX idx_establishments_active ON establishments(is_active);
 
 -- Рабочие часы
 CREATE INDEX idx_working_hours_day_time ON working_hours(day_of_week, open_time, close_time);
-CREATE INDEX idx_working_hours_establishment ON working_hours(establishment_id);
+CREATE INDEX idx_working_hours_establishment ON working_hours(establishment_id, day_of_week);
+
+-- События
+CREATE INDEX idx_events_dates ON events(start_date, end_date);
+CREATE INDEX idx_events_establishment ON events(establishment_id);
+CREATE INDEX idx_events_active ON events(is_active);
+
+-- Акции
+CREATE INDEX idx_promotions_dates ON promotions(start_date, end_date);
+CREATE INDEX idx_promotions_establishment ON promotions(establishment_id);
+CREATE INDEX idx_promotions_active ON promotions(is_active);
+
+-- Медиа и отзывы
+CREATE INDEX idx_images_entity ON images(entity_type, entity_id);
+CREATE INDEX idx_reviews_entity ON reviews(entity_type, entity_id);
 ```
 
 ## 🔍 Примеры полезных запросов
@@ -335,7 +380,7 @@ ORDER BY e.name;
 WITH RECURSIVE category_tree AS (
     SELECT id, name, parent_id, level
     FROM categories 
-    WHERE name = 'Ресторан' AND entity_type = 'establishment'
+    WHERE name = 'Ресторан'
     
     UNION ALL
     
@@ -409,6 +454,18 @@ ORDER BY establishments_count DESC;
 
 ## 🚀 Миграции и развертывание
 
+### Система миграций
+
+Система миграций позволяет безопасно обновлять структуру базы данных без потери данных. Каждая миграция имеет методы `up()` для применения изменений и `down()` для отката.
+
+### Файлы миграций
+```
+src/database/migrations/
+├── 001_initial_schema.js      # Начальная схема (пользователи, логи)
+├── 002_city_guide_schema.js   # Схема городского гида
+└── migrate.js                  # Основной скрипт управления миграциями
+```
+
 ### Выполнение миграций
 
 ```bash
@@ -429,7 +486,8 @@ node src/database/seed_city_guide.js
 ## 🔧 Технические детали
 
 ### Версии и совместимость
-- **MySQL**: 8.0+
+- **MySQL**: 5.7+ / 8.0+
+- **MariaDB**: 10.2+
 - **Node.js**: 16+
 - **Кодировка**: utf8mb4
 - **Движок**: InnoDB
@@ -474,9 +532,19 @@ node src/database/seed_city_guide.js
 1. Проверить логи системы
 2. Убедиться в корректности конфигурации базы данных
 3. Проверить выполнение миграций
-4. Обратиться к документации по миграциям (`MIGRATION_README.md`)
+4. Обратиться к документации по миграциям
+
+## 📚 Связанные файлы
+
+- `src/database/sql/database_schema.sql` - Полная схема базы данных
+- `src/database/sql/useful_queries.sql` - Примеры полезных SQL запросов
+- `src/database/sql/sample_data.sql` - Примеры данных в SQL формате
+- `src/database/migrate.js` - Основной скрипт миграций
+- `src/database/migrations/` - Файлы миграций
+- `src/database/seeders/` - Сидеры для тестовых данных
 
 ---
 
-*Документация создана для системы городского гида Telegram бота*
-*Версия: 1.0 | Последнее обновление: Декабрь 2024* 
+*Полная документация по базе данных городского гида Telegram бота*
+*Версия: 1.0 | Последнее обновление: Декабрь 2024*
+*Объединено из всех файлов документации* 
