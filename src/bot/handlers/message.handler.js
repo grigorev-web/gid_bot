@@ -1,6 +1,7 @@
 const logger = require('../../shared/logger/logger');
 const User = require('../../database/models/User');
 const Message = require('../../database/models/Message');
+const fs = require('fs');
 
 class MessageHandler {
     constructor(gigaChatService) {
@@ -30,23 +31,88 @@ class MessageHandler {
             await this.userModel.updateLastActivity(user.id);
 
             const welcomeMessage = `
-🤖 Добро пожаловать в AI-ассистент!
+👩 Добро пожаловать в гид бот по Нижнему Новгороду!
 
-Я интегрирован с GigaChat и готов помочь вам с любыми вопросами.
-
-Доступные команды:
-• /help - Справка
-• /settings - Настройки
+У меня есть информация о всех достопримечательностях, кафе и ресторанах, а также о всех событиях, которые проходят в городе.
 
 Просто напишите мне сообщение, и я отвечу вам!
             `;
 
-            // Отправляем сообщение с очищенной клавиатурой
-            await bot.sendMessage(chat.id, welcomeMessage, {
-                reply_markup: {
-                    remove_keyboard: true
-                }
-            });
+            // Отправляем сообщение с картинкой и тестовыми кнопками
+            try {
+                logger.info('Отправляю фото start_logo4.jpg');
+                
+                await bot.sendPhoto(chat.id, fs.createReadStream('./static/images/start_logo4.jpg'), {
+                    caption: welcomeMessage,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: '🎟️ Афиша',
+                                    callback_data: 'events'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '👨‍🍳 Где поесть?',
+                                    callback_data: 'where_eat'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '🌉 Куда сходить?',
+                                    callback_data: 'attractions'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '🎉 Развлечения',
+                                    callback_data: 'entertainment'
+                                }
+                            ]
+                        ]
+                    }
+                });
+                
+                logger.info('Приветственное фото успешно отправлено');
+                
+            } catch (photoError) {
+                logger.error(`Ошибка отправки приветственного фото: ${photoError.message}`);
+                
+                // Если не удалось отправить фото, отправляем текстовое сообщение
+                await bot.sendMessage(chat.id, welcomeMessage, {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: '🎟️ Афиша',
+                                    callback_data: 'events'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '👨‍🍳 Где поесть?',
+                                    callback_data: 'where_eat'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '🌉 Куда сходить?',
+                                    callback_data: 'attractions'
+                                }
+                            ],
+                            [
+                                {
+                                    text: '🎉 Развлечения',
+                                    callback_data: 'entertainment'
+                                }
+                            ]
+                        ]
+                    }
+                });
+                
+                logger.info('Отправлено текстовое приветственное сообщение');
+            }
             
             logger.info(`${user.first_name} ${user.username} ${user.id} запустил бота`);
         } catch (error) {
@@ -109,7 +175,10 @@ class MessageHandler {
             await bot.sendMessage(msg.chat.id, '❌ Ошибка при получении настроек');
         }
     }
-
+    async handleUnknownCommand(msg, bot) {
+        await bot.sendMessage(msg.chat.id, '❌ Неизвестная команда');
+    }
+    
     async handleRegularMessage(msg, bot) {
         try {
             const user = msg.from;

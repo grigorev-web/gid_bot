@@ -18,6 +18,14 @@
     "pm2:startup": "npx pm2 startup",
     "deploy": "bash deploy.sh",
     "update": "bash update-bot.sh",
+    "logs:stats": "node src/utils/log-cli.js stats",
+    "logs:list": "node src/utils/log-cli.js list",
+    "logs:view": "node src/utils/log-cli.js view",
+    "logs:search": "node src/utils/log-cli.js search",
+    "logs:cleanup": "node src/utils/log-cli.js cleanup",
+    "logs:export": "node src/utils/log-cli.js export",
+    "logs:performance": "node src/utils/log-cli.js performance",
+    "logs:cli": "node src/utils/log-cli.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -32,7 +40,9 @@
   "dependencies": {
     "node-telegram-bot-api": "^0.64.0",
     "mysql2": "^3.6.0",
-    "pm2": "^5.3.0"
+    "pm2": "^5.3.0",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

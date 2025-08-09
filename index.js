@@ -17,9 +17,12 @@ async function main() {
         console.log('✅ Бот успешно запущен!');
         console.log('📝 Используйте Ctrl+C для остановки');
         
+        // Логируем запуск бота
+        logger.botStart();
+        
     } catch (error) {
         console.error('❌ Ошибка запуска бота:', error.message);
-        logger.error(`Критическая ошибка запуска: ${error.message}`);
+        logger.errorOccurred(error, { context: 'main' });
         process.exit(1);
     }
 }
@@ -27,14 +30,45 @@ async function main() {
 // Обработка необработанных ошибок
 process.on('uncaughtException', (error) => {
     console.error('❌ Необработанная ошибка:', error.message);
-    logger.error(`Необработанная ошибка: ${error.message}`);
+    logger.errorOccurred(error, { context: 'uncaughtException' });
     process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Необработанное отклонение промиса:', reason);
-    logger.error(`Необработанное отклонение промиса: ${reason}`);
+    logger.errorOccurred(new Error(String(reason)), { context: 'unhandledRejection' });
     process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Получен сигнал SIGINT, завершение работы...');
+    logger.botStop('SIGINT');
+    
+    if (global.botInstance) {
+        try {
+            await global.botInstance.stop();
+        } catch (error) {
+            logger.errorOccurred(error, { context: 'shutdown' });
+        }
+    }
+    
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Получен сигнал SIGTERM, завершение работы...');
+    logger.botStop('SIGTERM');
+    
+    if (global.botInstance) {
+        try {
+            await global.botInstance.stop();
+        } catch (error) {
+            logger.errorOccurred(error, { context: 'shutdown' });
+        }
+    }
+    
+    process.exit(0);
 });
 
 // Запуск приложения

@@ -113,7 +113,10 @@ class Bot {
             await this.messageHandler.handleSettings(msg, this.bot);
             return;
         }
-        
+        if (text.startsWith('/')) {
+            await this.messageHandler.handleUnknownCommand(msg, this.bot);
+            //return;
+        }
         // Обработка обычных сообщений
         if (!text.startsWith('/')) {
             await this.messageHandler.handleRegularMessage(msg, this.bot);
