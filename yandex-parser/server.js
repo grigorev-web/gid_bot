@@ -1,15 +1,28 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 80;
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 const HOST = process.env.HOST || '0.0.0.0'; // Разрешаем доступ с любого IP
 
 // Создаем папку для логов если её нет
 if (!fs.existsSync('logs')) {
     fs.mkdirSync('logs');
 }
+
+// Создаем папку для SSL сертификатов если её нет
+if (!fs.existsSync('ssl')) {
+    fs.mkdirSync('ssl');
+}
+
+// SSL опции (самоподписанный сертификат)
+const httpsOptions = {
+    key: fs.existsSync('./ssl/key.pem') ? fs.readFileSync('./ssl/key.pem') : null,
+    cert: fs.existsSync('./ssl/cert.pem') ? fs.readFileSync('./ssl/cert.pem') : null
+};
 
 // Middleware для парсинга JSON
 app.use(express.json({ limit: '50mb' }));
@@ -32,6 +45,9 @@ app.use(express.static('public'));
 
 // Главная страница
 app.get('/', (req, res) => {
+    const protocol = req.secure ? 'https' : 'http';
+    const port = req.secure ? HTTPS_PORT : PORT;
+    
     res.send(`
         <!DOCTYPE html>
         <html>
@@ -43,15 +59,21 @@ app.get('/', (req, res) => {
                 h1 { color: #333; }
                 .status { padding: 10px; background: #e8f5e8; border-radius: 5px; }
                 .ip-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; }
+                .https-info { background: #e8f4fd; padding: 10px; border-radius: 5px; margin: 10px 0; }
             </style>
         </head>
         <body>
             <h1>🚀 Сервер для парсинга Яндекс Карт</h1>
             <div class="status">
-                <p>✅ Сервер работает на порту ${PORT}</p>
+                <p>✅ Сервер работает на порту ${port}</p>
+                <p>🔒 Протокол: ${protocol.toUpperCase()}</p>
                 <p>📝 Отправляйте POST запросы на /receive_data</p>
                 <p>📁 Логи сохраняются в папку logs/</p>
                 <p>🔍 Проверьте консоль сервера для просмотра полученных данных</p>
+            </div>
+            <div class="https-info">
+                <p><strong>HTTPS URL:</strong> https://${req.headers.host || HOST}/receive_data</p>
+                <p><strong>HTTP URL:</strong> http://${req.headers.host || HOST}:${PORT}/receive_data</p>
             </div>
             <div class="ip-info">
                 <p><strong>IP адрес сервера:</strong> ${req.connection.remoteAddress || req.ip || 'Неизвестно'}</p>
@@ -143,15 +165,29 @@ app.get('/test', (req, res) => {
     });
 });
 
-// Запуск сервера
+// Запуск HTTP сервера
 app.listen(PORT, HOST, () => {
-    console.log('🚀 Сервер запущен на http://' + HOST + ':' + PORT);
+    console.log('🚀 HTTP сервер запущен на http://' + HOST + ':' + PORT);
     console.log('📝 Отправляйте POST запросы на http://' + HOST + ':' + PORT + '/receive_data');
     console.log('📊 Статистика: http://' + HOST + ':' + PORT + '/stats');
     console.log('🧪 Тест: http://' + HOST + ':' + PORT + '/test');
     console.log('📁 Логи сохраняются в папку logs/');
-    console.log('⏹️  Для остановки нажмите Ctrl+C');
 });
+
+// Запуск HTTPS сервера (если есть сертификаты)
+if (httpsOptions.key && httpsOptions.cert) {
+    https.createServer(httpsOptions, app).listen(HTTPS_PORT, HOST, () => {
+        console.log('🔒 HTTPS сервер запущен на https://' + HOST + ':' + HTTPS_PORT);
+        console.log('📝 Отправляйте POST запросы на https://' + HOST + ':' + HTTPS_PORT + '/receive_data');
+        console.log('📊 Статистика: https://' + HOST + ':' + HTTPS_PORT + '/stats');
+        console.log('🧪 Тест: https://' + HOST + ':' + HTTPS_PORT + '/test');
+    });
+} else {
+    console.log('⚠️  HTTPS сервер не запущен - отсутствуют SSL сертификаты');
+    console.log('🔧 Создайте сертификаты в папке ssl/ или запустите скрипт создания');
+}
+
+console.log('⏹️  Для остановки нажмите Ctrl+C');
 
 // Graceful shutdown
 process.on('SIGINT', () => {

@@ -20,7 +20,7 @@
         
         // Фильтруем только запросы к API Яндекс Карт
         if (typeof url === 'string' && (
-            url.includes('yandex.ru/maps/api/search') //|| 
+            url.includes('/maps/api/search?') //|| 
             //url.includes('api-maps.yandex.ru') ||
            // url.includes('search-maps.yandex.ru')
         )) {
