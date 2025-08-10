@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0'; // Разрешаем доступ с любого IP
 
 // Создаем папку для логов если её нет
 if (!fs.existsSync('logs')) {
@@ -12,6 +13,19 @@ if (!fs.existsSync('logs')) {
 
 // Middleware для парсинга JSON
 app.use(express.json({ limit: '50mb' }));
+
+// Middleware для CORS (разрешаем запросы с любых доменов)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
 
 // Статические файлы
 app.use(express.static('public'));
@@ -28,6 +42,7 @@ app.get('/', (req, res) => {
                 body { font-family: Arial, sans-serif; margin: 40px; }
                 h1 { color: #333; }
                 .status { padding: 10px; background: #e8f5e8; border-radius: 5px; }
+                .ip-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; }
             </style>
         </head>
         <body>
@@ -37,6 +52,10 @@ app.get('/', (req, res) => {
                 <p>📝 Отправляйте POST запросы на /receive_data</p>
                 <p>📁 Логи сохраняются в папку logs/</p>
                 <p>🔍 Проверьте консоль сервера для просмотра полученных данных</p>
+            </div>
+            <div class="ip-info">
+                <p><strong>IP адрес сервера:</strong> ${req.connection.remoteAddress || req.ip || 'Неизвестно'}</p>
+                <p><strong>User-Agent:</strong> ${req.headers['user-agent'] || 'Неизвестно'}</p>
             </div>
         </body>
         </html>
@@ -59,6 +78,7 @@ app.post('/receive_data', (req, res) => {
         console.log('\n' + '='.repeat(60));
         console.log(`🆕 НОВЫЕ ДАННЫЕ ПОЛУЧЕНЫ ${new Date().toLocaleString()}`);
         console.log('='.repeat(60));
+        console.log('IP клиента:', req.ip || req.connection.remoteAddress);
         console.log('URL:', data.url);
         console.log('Метод:', data.method);
         console.log('Время:', data.timestamp);
@@ -78,7 +98,9 @@ app.post('/receive_data', (req, res) => {
             status: 'success',
             message: 'Данные получены',
             log_file: logFile,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            server_ip: req.connection.localAddress,
+            client_ip: req.ip || req.connection.remoteAddress
         });
         
     } catch (error) {
@@ -99,7 +121,9 @@ app.get('/stats', (req, res) => {
             total_files: files.length,
             files: files.slice(-10), // Последние 10 файлов
             server_uptime: process.uptime(),
-            memory_usage: process.memoryUsage()
+            memory_usage: process.memoryUsage(),
+            server_ip: req.connection.localAddress,
+            client_ip: req.ip || req.connection.remoteAddress
         };
         res.json(stats);
     } catch (error) {
@@ -107,11 +131,24 @@ app.get('/stats', (req, res) => {
     }
 });
 
+// Тестовый эндпоинт для проверки работы
+app.get('/test', (req, res) => {
+    res.json({
+        status: 'success',
+        message: 'Сервер работает!',
+        timestamp: new Date().toISOString(),
+        server_ip: req.connection.localAddress,
+        client_ip: req.ip || req.connection.remoteAddress,
+        headers: req.headers
+    });
+});
+
 // Запуск сервера
-app.listen(PORT, () => {
-    console.log('🚀 Сервер запущен на http://localhost:' + PORT);
-    console.log('📝 Отправляйте POST запросы на http://localhost:' + PORT + '/receive_data');
-    console.log('📊 Статистика: http://localhost:' + PORT + '/stats');
+app.listen(PORT, HOST, () => {
+    console.log('🚀 Сервер запущен на http://' + HOST + ':' + PORT);
+    console.log('📝 Отправляйте POST запросы на http://' + HOST + ':' + PORT + '/receive_data');
+    console.log('📊 Статистика: http://' + HOST + ':' + PORT + '/stats');
+    console.log('🧪 Тест: http://' + HOST + ':' + PORT + '/test');
     console.log('📁 Логи сохраняются в папку logs/');
     console.log('⏹️  Для остановки нажмите Ctrl+C');
 });
